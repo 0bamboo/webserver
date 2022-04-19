@@ -6,7 +6,7 @@
 /*   By: abdait-m <abdait-m@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/03/26 20:43:19 by abdait-m          #+#    #+#             */
-/*   Updated: 2022/04/17 16:18:07 by abdait-m         ###   ########.fr       */
+/*   Updated: 2022/04/19 01:33:39 by abdait-m         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,15 +29,15 @@ void	webServer::_buildASocket_()
 	/* code */
 	// creating a socket this socket is used for accepting connections not for exchanging the data{ :
 	if ((this->_socket_ = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-		throw (std::runtime_error("----> [ERROR] Socket creation error !"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Socket creation error !\033[0;37m"));
 	// Set the server socket to non-blocking mode .
 	// file descriptors are by default blocking , so need to change it to non-blocking mode
 	// we do that by taking the fd of first arg and set its flag to non-blocking mode using fcntl
 	if (fcntl(this->_socket_, F_SETFL, O_NONBLOCK) == -1)
-		throw (std::runtime_error("----> [ERROR] Non-blocking error for socket " + std::to_string(this->_socket_)+ "!"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Non-blocking error for socket " + std::to_string(this->_socket_)+ "!\033[0;37m"));
 	this->_option_ = 1;
 	if (setsockopt(this->_socket_, SOL_SOCKET, SO_REUSEADDR, &this->_option_, sizeof(socklen_t)) == -1)
-		throw (std::runtime_error("----> [ERROR] Socket option error !"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Socket option error !\033[0;37m"));
 	// binding the socket:
 	this->_addrSize_ = sizeof(this->_Saddr_);
 	std::memset(&this->_Saddr_, 0, this->_addrSize_);
@@ -45,10 +45,10 @@ void	webServer::_buildASocket_()
 	this->_Saddr_.sin_port = htons(this->_currPort_);
 	this->_Saddr_.sin_addr.s_addr = htonl(INADDR_ANY);
 	if (bind(this->_socket_, (struct sockaddr*)&this->_Saddr_, this->_addrSize_) == -1)
-		throw std::runtime_error("----> [ERROR] Binding Error [ Socket " + std::to_string(this->_socket_) + " and Host " + this->_host_ + ":" + std::to_string(this->_currPort_) + " ] !");
+		throw std::runtime_error("\033[1;31m----> [ERROR] Binding Error [ Socket " + std::to_string(this->_socket_) + " and Host " + this->_host_ + ":" + std::to_string(this->_currPort_) + " ] !\033[0;37m");
 	// listenning:
 	if (listen(this->_socket_, 2048))
-		throw (std::runtime_error("----> [ERROR] Listenning error for socket [ " + std::to_string(this->_socket_) + " ]"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Listenning error for socket [ " + std::to_string(this->_socket_) + " ]\033[0;37m"));
 	FD_SET(this->_socket_, &this->_setFDs_);
 	// this is for select function we turn in always the max fd.
 	this->_maxSfd_ = (this->_socket_ > this->_maxSfd_) ? this->_socket_ : this->_maxSfd_;
@@ -63,10 +63,10 @@ void	webServer::_acceptingClientConnection_(int& _fdsocket)
 	// accept the new connection and get the socket for exchanging the data 
 	int _acceptedS_ = accept(_fdsocket, (struct sockaddr*)&this->_Caddr_, &this->_addrSize_);
 	if (_acceptedS_ == -1)
-		throw (std::runtime_error("----> [ERROR] The connection from the client is rejected !"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] The connection from the client is rejected !"));
 	std::cout << "New connection established [ Server socket " << _fdsocket << " | Client socket "<< _acceptedS_ <<" | " << inet_ntoa(this->_Caddr_.sin_addr)<< ":"<< this->_Caddr_.sin_port << std::endl;
 	if (fcntl(_acceptedS_, F_SETFL, O_NONBLOCK) == -1)
-		throw (std::runtime_error("----> [ERROR] Non-blocking error for socket" + std::to_string(_acceptedS_) + "!"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Non-blocking error for socket" + std::to_string(_acceptedS_) + "!\033[0;37m"));
 	FD_SET(_acceptedS_, &this->_setFDs_);
 	FD_SET(_acceptedS_, &this->_writefds_);
 	// set the max fd
@@ -144,10 +144,7 @@ void	webServer::_handlingClientConnection_(int& _fdsocket)
 	else if (_rVal_ == 0) // socket shutdown
 		this->_closeSocket_(_acceptedS_);
 	else if (_rVal_ == -1)
-	{
-		std::cout << "===========> RECV ERROR <===========" << std::endl;
 		return ;
-	}
 }
 
 void	webServer::_holdForConnections_()
@@ -184,7 +181,7 @@ void	webServer::_holdForConnections_()
 			}
 		}
 		else if (_selectRet_ == -1)
-			throw (std::runtime_error("----> [ERROR] Select Error !"));
+			throw (std::runtime_error("\033[1;31m----> [ERROR] Select Error !\033[0;37m"));
 	}
 }
 
@@ -221,7 +218,7 @@ void	webServer::_getClientMaxBodySize_(int&	_clientSocket_)
 	struct sockaddr_in _addr_;
 	std::memset(&_addr_, 0, sizeof(_addr_));
 	if (getsockname(iter->second, (struct sockaddr *)&_addr_, &this->_addrSize_) == -1)
-		throw (std::runtime_error("----> [ERROR] Unable to fetch server informations !"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Unable to fetch server informations !\033[0;37m"));
 	for(std::vector<serverData>::iterator iter = this->_servers_.begin(); iter != this->_servers_.end(); iter++)
 	{
 		// get host from the server and check with iter hosts iter->get_host() == inet_ntoa(_addr_.sin_addr)
@@ -294,7 +291,7 @@ size_t	webServer::_getHexSizeOfChunk_(std::string&	_chunkBuff)
 {
 	_chunkBuff.pop_back();
 	if (_NonHexChar_(_chunkBuff))
-		throw (std::runtime_error("----> [ERROR] Incorrect chunk size !"));
+		throw (std::runtime_error("\033[1;31m----> [ERROR] Incorrect chunk size !\033[0;37m"));
 	size_t _decimalSize_ = 0;
 	std::stringstream hex(_chunkBuff);
 	hex >> std::hex >> _decimalSize_;
