@@ -6,7 +6,7 @@
 /*   By: abdait-m <abdait-m@student.1337.ma>        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/03/26 20:43:19 by abdait-m          #+#    #+#             */
-/*   Updated: 2022/04/19 14:24:03 by abdait-m         ###   ########.fr       */
+/*   Updated: 2022/04/19 17:45:07 by abdait-m         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,7 @@ void	webServer::_buildASocket_()
 	// this is for select function we turn in always the max fd.
 	this->_maxSfd_ = (this->_socket_ > this->_maxSfd_) ? this->_socket_ : this->_maxSfd_;
 	this->_socketFds_.push_back(this->_socket_);
-	std::cout << "Socket " << this->_socket_ << " bind to " + this->_host_ + ":" << this->_currPort_ << std::endl;
+	std::cout << "\033[1;30m---> Socket " << this->_socket_ << " bind to " + this->_host_ + ":" << this->_currPort_ << "\033[0;37m\n";
 	// }
 	
 }
@@ -64,7 +64,7 @@ void	webServer::_acceptingClientConnection_(int& _fdsocket)
 	int _acceptedS_ = accept(_fdsocket, (struct sockaddr*)&this->_Caddr_, &this->_addrSize_);
 	if (_acceptedS_ == -1)
 		throw (std::runtime_error("\033[1;31m----> [ERROR] The connection from the client is rejected !"));
-	std::cout << "New connection established [ Server socket " << _fdsocket << " | Client socket "<< _acceptedS_ <<" | " << inet_ntoa(this->_Caddr_.sin_addr)<< ":"<< this->_Caddr_.sin_port << std::endl;
+	std::cout << "\033[1;30m---> New connection established [ Server socket " << _fdsocket << " | Client socket "<< _acceptedS_ <<" | " << inet_ntoa(this->_Caddr_.sin_addr)<< ":"<< this->_Caddr_.sin_port << "\033[0;37m\n";
 	if (fcntl(_acceptedS_, F_SETFL, O_NONBLOCK) == -1)
 		throw (std::runtime_error("\033[1;31m----> [ERROR] Non-blocking error for socket" + std::to_string(_acceptedS_) + "!\033[0;37m"));
 	FD_SET(_acceptedS_, &this->_setFDs_);
@@ -96,7 +96,7 @@ void	webServer::_closeSocket_(int& _acceptedS_)
 	FD_CLR(_acceptedS_, &this->_setFDs_);
 	FD_CLR(_acceptedS_, &this->_writefds_);
 	this->_clientsInfos_.erase(_acceptedS_);
-	std::cout << " Socket [ " << _acceptedS_ << " ] disconnected !" << std::endl;
+	std::cout << "\033[1;30m---> Client with Socket [ " << _acceptedS_ << " ] disconnected !\033[0;37m" << std::endl;
 }
 
 void	webServer::_handlingClientConnection_(int& _fdsocket)
@@ -107,7 +107,7 @@ void	webServer::_handlingClientConnection_(int& _fdsocket)
 	bzero(_buffer_, sizeof(_buffer_));
 	// read from client socket 
 	int _rVal_ = recv(_acceptedS_, _buffer_, BUFSIZE, 0);
-	std::cout << "Receive data from client with socket : " << _acceptedS_ << " - IP = " << inet_ntoa(this->_Caddr_.sin_addr) << ":" << ntohs(this->_Caddr_.sin_port) << std::endl;
+	std::cout << "\033[1;30m---> Receive data from client with socket : " << _acceptedS_ << " - IP = " << inet_ntoa(this->_Caddr_.sin_addr) << ":" << ntohs(this->_Caddr_.sin_port) << "\033[0;37m\n";
 	if (_rVal_ > 0)
 	{
 		_buffer_[_rVal_] = '\0';
@@ -144,11 +144,12 @@ void	webServer::_handlingClientConnection_(int& _fdsocket)
 	else if (_rVal_ == 0) // socket shutdown
 		this->_closeSocket_(_acceptedS_);
 	else if (_rVal_ == -1)
-		return ;
+		std::cout << "\033[1;31m----> [ERROR] An error occurred while reading data from socket [ " << _acceptedS_ <<" ]\033[0;37m\n";
 }
 
 void	webServer::_holdForConnections_()
 {
+	std::cout << "\033[1;30m---> Waiting for incoming connections \033[0;37m\n";
 	while(true)
 	{
 		FD_ZERO(&this->_readfds_);
@@ -331,15 +332,11 @@ void	webServer::_handleResponse_(int& _acceptedS_, HttpRequest& _newReq_)
 		size_t		_respSize_ = 0;
 		_response_.append(_responseObj_.getResponse());
 		_respSize_ = _response_.length();
-		send(_acceptedS_, _response_.c_str(), _respSize_, 0);
-		_dropSocket_(_acceptedS_);// this is lssaqaa 
-		// if (!_newReq_.getConnectionType().compare("close")) //if the option of connection is close :
-		// {
-		// 	std::cout << "Client Socket [ " << _acceptedS_ << " ] disconnected !" << std::endl;
-
-		// 	close(_acceptedS_);
-		// 	FD_CLR(_acceptedS_, &_writefds_);
-		// 	FD_CLR(_acceptedS_, &_setFDs_);
-		// }
+		ssize_t	send_ret = send(_acceptedS_, _response_.c_str(), _respSize_, 0);
+		if (send_ret == -1)
+			std::cout << "\033[1;33m----> [ERROR] Can't send response !\033[0;37m" << std::endl;
+		else if (send_ret == 0)
+			std::cout << "\033[1;33m----> Response Buffer is empty 0 bytes was passed to send !\033[0;37m" << std::endl;
+		_dropSocket_(_acceptedS_);
 	}
 }
